@@ -80,7 +80,7 @@ pub async fn add(
     let db_conn = sqlite::connect(sqlite::DBF::IMG).unwrap();
     let uuid = match uuid {
         Some(uuid) => uuid,
-        None => Uuid::new_v4().to_string()
+        None => Uuid::now_v7().to_string()
     };
 
     let result = db_conn.execute("

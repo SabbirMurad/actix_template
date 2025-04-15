@@ -277,7 +277,7 @@ async fn main() -> io::Result<()> {
                 res
             })
         })
-
+        .configure(Routes::Auth::router)
         .configure(Routes::Pages::router)
     });
 

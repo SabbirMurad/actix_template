@@ -3,8 +3,8 @@ use uuid::Uuid;
 use chrono::Utc;
 use mongodb::bson::doc;
 use crate::schema::Account;
-use crate::third_party_api::SMTP;
-use crate::BuiltIn::mongo::MongoDB;
+use crate::Integrations::Smtp;
+use crate::BuiltIns::mongo::MongoDB;
 use serde::{ Serialize, Deserialize };
 use mongodb::{ClientSession, Database};
 use actix_web::{ web, Error, HttpResponse };
@@ -54,7 +54,7 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
     /* DATABASE ACID SESSION INIT */
 
     let (db, mut session) = MongoDB.connect_acid().await;
-    if let Err(error) = session.start_transaction(None).await {
+    if let Err(error) = session.start_transaction().await {
         log::error!("{:?}", error);
         return Ok(Response::internal_server_error(&error.to_string()));
     }
@@ -71,7 +71,7 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
 
     //creating account_core
     let now = Utc::now().timestamp_millis();
-    let user_id: String = Uuid::new_v4().to_string();
+    let user_id: String = Uuid::now_v7().to_string();
 
     let account_core = Account::AccountCore {
         uuid: user_id.clone(),
@@ -87,10 +87,8 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
     };
 
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.insert_one_with_session(
+    let result = collection.insert_one(
         account_core,
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -116,10 +114,8 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
         profile_verified: false,
     };
 
-    let result = collection.insert_one_with_session(
+    let result = collection.insert_one(
         account_profile,
-        None,
-        &mut session,
     ).await;
 
     if let Err(error) = result {
@@ -130,10 +126,10 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
   
 
     //creating validation request
-    let mut rng = rand::thread_rng();
-    let validation_code: u32 = rng.gen_range(100000..999999);
+    let mut rng = rand::rng();
+    let validation_code: u32 = rng.random_range(100000..999999);
     let request = Account::AccountVerificationRequest {
-        uuid: Uuid::new_v4().to_string(),
+        uuid: Uuid::now_v7().to_string(),
         user_id: user_id.clone(),
         validation_code: validation_code.to_string(),
         expires_at: now + CODE_EXPIRE_TIME * 60 * 1000,
@@ -141,10 +137,8 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
     
     let collection = db.collection::
     <Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.insert_one_with_session(
+    let result = collection.insert_one(
         request,
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -153,12 +147,12 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let message = SMTP::sign_up_verification_code_template(
+    let message = Smtp::sign_up_verification_code_template(
         &post_data.email_address,
         &validation_code.to_string()
     );
 
-    let result = SMTP::send_email(message);
+    let result = Smtp::send_email(message);
     if let Err(_) = result {
         session.abort_transaction().await.ok().unwrap();
         return Ok(Response::internal_server_error("Failed to send email"));
@@ -181,10 +175,8 @@ async fn account_already_exist(
     email_address: &str
 ) -> Result<(), HttpResponse> {
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
       doc!{"email_address": email_address},
-      None,
-      session,
     ).await;
 
     if let Err(error) = result {
@@ -217,10 +209,8 @@ async fn account_already_exist(
 
     let collection = db.collection::
     <Account::AccountProfile>("account_profile");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
       doc!{"username": username},
-      None,
-      session,
     ).await;
 
     if let Err(error) = result {
@@ -233,10 +223,8 @@ async fn account_already_exist(
 
     if let Some(account_profile) = option {
         let collection = db.collection::<Account::AccountCore>("account_core");
-        let result = collection.find_one_with_session(
+        let result = collection.find_one(
           doc!{"uuid": &account_profile.uuid},
-          None,
-          session,
         ).await;
     
         if let Err(error) = result {
@@ -276,10 +264,8 @@ async fn delete_account(
     user_id: &str
 ) -> Result<(), HttpResponse> {
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {
@@ -290,10 +276,8 @@ async fn delete_account(
 
     let collection = db.collection::
     <Account::AccountProfile>("account_profile");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {
@@ -304,10 +288,8 @@ async fn delete_account(
 
     let collection = db.collection::
     <Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {

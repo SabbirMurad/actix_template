@@ -4,8 +4,8 @@ use chrono::Utc;
 use mongodb::bson::doc;
 use actix_session::Session;
 use crate::{builtins::jwt, schema::Account};
-use crate::third_party_api::SMTP;
-use crate::BuiltIn::mongo::MongoDB;
+use crate::Integrations::Smtp;
+use crate::BuiltIns::mongo::MongoDB;
 use crate::utils::response::Response;
 use serde::{ Serialize, Deserialize };
 use mongodb::{ClientSession, Database};
@@ -47,7 +47,7 @@ pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Res
 
     /* DATABASE ACID SESSION INIT */
     let (db, mut session) = MongoDB.connect_acid().await;
-    if let Err(error) = session.start_transaction(None).await {
+    if let Err(error) = session.start_transaction().await {
         log::error!("{:?}", error);
         return Ok(Response::internal_server_error(&error.to_string()));
     }
@@ -69,10 +69,10 @@ pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Res
         // Create a verification request
         let collection = db.collection::<Account::SignInVerificationRequest>("sign_in_verification_request");
 
-        let mut rng = rand::thread_rng();
-        let validation_code: u32 = rng.gen_range(100000..999999);
+        let mut rng = rand::rng();
+        let validation_code: u32 = rng.random_range(100000..999999);
 
-        let request_id = Uuid::new_v4().to_string();
+        let request_id = Uuid::now_v7().to_string();
         let now = Utc::now().timestamp_millis();
         let request = Account::SignInVerificationRequest {
             user_id: account_core.uuid.clone(),
@@ -81,10 +81,8 @@ pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Res
             validation_code: validation_code.to_string(),
         };
 
-        let result = collection.insert_one_with_session(
+        let result = collection.insert_one(
             request,
-            None,
-            &mut session
         ).await;
 
         if let Err(error) = result {
@@ -93,12 +91,12 @@ pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Res
             return Ok(Response::internal_server_error(&error.to_string()));
         }
     
-        let message = SMTP::sign_in_verification_code_template(
+        let message = Smtp::sign_in_verification_code_template(
             &account_core.email_address,
             &validation_code.to_string()
         );
     
-        let result = SMTP::send_email(message);
+        let result = Smtp::send_email(message);
         if let Err(_) = result {
             session.abort_transaction().await.ok().unwrap();
             return Ok(Response::internal_server_error("Failed to send email"));
@@ -157,10 +155,8 @@ async fn validate_login(
 ) -> Result<Account::AccountCore, HttpResponse> {
     let collection = db.collection::<Account::AccountCore>("account_core");
 
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
         doc!{"email_address": email_or_username},
-        None,
-        session
     ).await;
 
     if let Err(error) = result {
@@ -174,10 +170,8 @@ async fn validate_login(
     if let None = option {
         let collection = db.collection::<Account::AccountProfile>("account_profile");
 
-        let result = collection.find_one_with_session(
+        let result = collection.find_one(
             doc!{"username": email_or_username},
-            None,
-            session
         ).await;
 
         if let Err(error) = result {
@@ -197,10 +191,8 @@ async fn validate_login(
 
         let collection = db.collection::<Account::AccountCore>("account_core");
 
-        let result = collection.find_one_with_session(
+        let result = collection.find_one(
             doc!{"uuid": account_profile.uuid},
-            None,
-            session
         ).await;
     
         if let Err(error) = result {

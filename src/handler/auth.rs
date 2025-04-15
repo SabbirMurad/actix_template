@@ -35,10 +35,8 @@ pub async fn delete_account(
     user_id: &str
 ) -> Result<(), HttpResponse> {
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {
@@ -49,10 +47,8 @@ pub async fn delete_account(
 
     let collection = db.collection::
     <Account::AccountProfile>("account_profile");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {
@@ -63,10 +59,8 @@ pub async fn delete_account(
 
     let collection = db.collection::
     <Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.delete_one_with_session(
+    let result = collection.delete_one(
         doc!{"uuid": user_id},
-        None,
-        session,
     ).await;
 
     if let Err(error) = result {

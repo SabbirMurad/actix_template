@@ -1,7 +1,7 @@
 use chrono::Utc;
 use mongodb::bson::doc;
 use crate::{builtins::jwt, schema::Account};
-use crate::BuiltIn::mongo::MongoDB;
+use crate::BuiltIns::mongo::MongoDB;
 use serde::{ Serialize, Deserialize };
 use crate::utils::response::Response;
 use actix_web::{ web, Error, HttpResponse };
@@ -41,17 +41,15 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
 
     /* DATABASE ACID SESSION INIT */
     let (db, mut session) = MongoDB.connect_acid().await;
-    if let Err(error) = session.start_transaction(None).await {
+    if let Err(error) = session.start_transaction().await {
         log::error!("{:?}", error);
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
     //checking if user exist
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
         doc!{"uuid": &post_data.user_id},
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -75,10 +73,8 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
     //check if validation code match
     let collection = db.collection::
     <Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
         doc!{"user_id": &post_data.user_id},
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -106,11 +102,9 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
 
     //make user verified
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.update_one_with_session(
+    let result = collection.update_one(
         doc!{ "uuid": &post_data.user_id },
         doc!{"$set": { "email_verified": true }},
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -128,90 +122,8 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
     //delete validation request
     let collection = db.collection
     ::<Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.delete_many_with_session(
+    let result = collection.delete_many(
         doc!{"user_id": &post_data.user_id},
-        None,
-        &mut session
-    ).await;
-
-    if let Err(error) = result {
-      log::error!("{:?}", error);
-      session.abort_transaction().await.ok().unwrap();
-      return Ok(Response::internal_server_error(&error.to_string()));
-    }
-
-    //create account social
-    let empty_vec = Vec::new();
-    let now = Utc::now().timestamp_millis();
-    let account_social = Account::AccountSocial {
-        uuid: account_core.uuid.clone(),
-        liked_by: empty_vec.clone(),
-        followers: empty_vec.clone(),
-        following: empty_vec.clone(),
-        friends: empty_vec.clone(),
-        blocked: empty_vec.clone(),
-
-        like_count: 0,
-        follower_count: 0, 
-        following_count: 0,
-        friend_count: 0,
-        blocked_count: 0,
-
-        modified_at: now,
-    };
-
-    let collection = db.collection
-    ::<Account::AccountSocial>("account_social");
-    let result = collection.insert_one_with_session(
-        account_social,
-        None,
-        &mut session
-    ).await;
-
-    if let Err(error) = result {
-      log::error!("{:?}", error);
-      session.abort_transaction().await.ok().unwrap();
-      return Ok(Response::internal_server_error(&error.to_string()));
-    }
-
-    //create account status
-    let account_status = Account::AccountStatus {
-        uuid: account_core.uuid.clone(),
-        online: false,
-        last_seen: now,
-        fcm_tokens: empty_vec.clone(),
-    };
-    let collection = db.collection
-    ::<Account::AccountStatus>("account_status");
-    let result = collection.insert_one_with_session(
-        account_status,
-        None,
-        &mut session
-    ).await;
-
-    if let Err(error) = result {
-      log::error!("{:?}", error);
-      session.abort_transaction().await.ok().unwrap();
-      return Ok(Response::internal_server_error(&error.to_string()));
-    }
-
-    //create account notification settings
-    let account_notification_settings = Account::AccountNotificationSettings {
-        uuid: account_core.uuid.clone(),
-        friend_request_notification: true,
-        following_notification: true,
-        appreciation_notification: true,
-        comment_notification: true,
-        tag_notification: true,
-        modified_at: now,
-    };
-
-    let collection = db.collection
-    ::<Account::AccountNotificationSettings>("account_notification_settings");
-    let result = collection.insert_one_with_session(
-        account_notification_settings,
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {

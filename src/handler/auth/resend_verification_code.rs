@@ -2,8 +2,8 @@ use rand::Rng;
 use chrono::Utc;
 use mongodb::bson::doc;
 use crate::schema::Account;
-use crate::third_party_api::SMTP;
-use crate::BuiltIn::mongo::MongoDB;
+use crate::Integrations::Smtp;
+use crate::BuiltIns::mongo::MongoDB;
 use serde::{ Serialize, Deserialize };
 use crate::utils::response::Response;
 use actix_web::{ web, Error, HttpResponse };
@@ -12,7 +12,7 @@ use actix_web::{ web, Error, HttpResponse };
 const CODE_EXPIRE_TIME: i64 = 15;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct PostData { user_id: String }
+pub struct PostData { user_id: String }
 
 pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error> {
     let post_data = sanitize(&form_data);
@@ -23,17 +23,15 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
 
     /* DATABASE ACID SESSION INIT */
     let (db, mut session) = MongoDB.connect_acid().await;
-    if let Err(error) = session.start_transaction(None).await {
+    if let Err(error) = session.start_transaction().await {
         log::error!("{:?}", error);
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
     //checking if user exist
     let collection = db.collection::<Account::AccountCore>("account_core");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
         doc!{"uuid": &post_data.user_id},
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -57,10 +55,8 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
     //check if validation code exist
     let collection = db.collection::
     <Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.find_one_with_session(
+    let result = collection.find_one(
         doc!{"user_id": &post_data.user_id},
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -78,13 +74,13 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
     let request = option.unwrap();
 
     //creating new validation request
-    let mut rng = rand::thread_rng();
-    let validation_code: u32 = rng.gen_range(100000..999999);
+    let mut rng = rand::rng();
+    let validation_code: u32 = rng.random_range(100000..999999);
 
     //update validation request
     let created_at = Utc::now().timestamp_millis();
     let collection = db.collection::<Account::AccountVerificationRequest>("account_verification_request");
-    let result = collection.update_one_with_session(
+    let result = collection.update_one(
         doc!{
             "uuid": &request.uuid,
             "user_id": &post_data.user_id
@@ -95,8 +91,6 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
                 "expires_at": created_at + CODE_EXPIRE_TIME * 60 * 1000,
             }
         },
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -105,12 +99,12 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let message = SMTP::sign_up_verification_code_template(
+    let message = Smtp::sign_up_verification_code_template(
         &user.email_address,
         &validation_code.to_string()
     );
 
-    let result = SMTP::send_email(message);
+    let result = Smtp::send_email(message);
     if let Err(_) = result {
         session.abort_transaction().await.ok().unwrap();
         return Ok(Response::internal_server_error("Failed to send email"));

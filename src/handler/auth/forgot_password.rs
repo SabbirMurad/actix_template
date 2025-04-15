@@ -13,7 +13,7 @@ use actix_web::{ web, Error, HttpResponse };
 const REQ_EXP_TIME: i64 = 15;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PostData { user_id: String }
+pub struct PostData { user_id: String }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Payload { user_id: String, expires_in: i64 }
@@ -71,20 +71,18 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
     let mut rng = rand::rng();
     let validation_code: u32 = rng.random_range(100000..1000000);
 
-    let secret_key = Uuid::new_v4().to_string() + "-" + &Uuid::new_v4().to_string() + "-" + &Uuid::new_v4().to_string();
+    let secret_key = Uuid::now_v7().to_string() + "-" + &Uuid::now_v7().to_string() + "-" + &Uuid::now_v7().to_string();
     let expires_at = Utc::now().timestamp_millis() + (1000 * 60 * REQ_EXP_TIME);
 
     if count != 0 {
         //updating
-        let result = collection.update_one_with_session(
+        let result = collection.update_one(
             doc!{"user_id": &account_core.uuid},
             doc!{"$set": {
                 "secret_key": &secret_key,
                 "validation_code": &validation_code.to_string(),
                 "expires_at": &expires_at
             }},
-            None,
-            &mut session
         ).await;
 
         if let Err(error) = result {
@@ -93,12 +91,12 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
             return Ok(Response::internal_server_error(&error.to_string()));
         }
 
-        let message = SMTP::password_reset_verification_code_template(
+        let message = Smtp::password_reset_verification_code_template(
             &account_core.email_address,
             &validation_code.to_string()
         );
     
-        let result = SMTP::send_email(message);
+        let result = Smtp::send_email(message);
         if let Err(_) = result {
             session.abort_transaction().await.ok().unwrap();
             return Ok(Response::internal_server_error("Failed to send email"));
@@ -114,23 +112,26 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
             user_id: account_core.uuid.clone(),
             expires_in: REQ_EXP_TIME
         };
-        return Ok(HttpResponse::Ok().content_type("application/json").json(data))
+
+        return Ok(
+            HttpResponse::Ok()
+            .content_type("application/json")
+            .json(data)
+        )
     }
 
     //creating the reset collection
     let collection = db.collection("password_reset_request");
 
-    let result = collection.insert_one_with_session(
+    let result = collection.insert_one(
         doc!{
-            "uuid": Uuid::new_v4().to_string(),
+            "uuid": Uuid::now_v7().to_string(),
             "user_id": &account_core.uuid,
             "secret_key": &secret_key,
             "validation_code": &validation_code.to_string(),
             "code_validated": false,
             "expires_at": expires_at,
         },
-        None,
-        &mut session
     ).await;
 
     if let Err(error) = result {
@@ -139,12 +140,12 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let message = SMTP::password_reset_verification_code_template(
+    let message = Smtp::password_reset_verification_code_template(
         &account_core.email_address,
         &validation_code.to_string()
     );
 
-    let result = SMTP::send_email(message);
+    let result = Smtp::send_email(message);
     if let Err(_) = result {
         session.abort_transaction().await.ok().unwrap();
         return Ok(Response::internal_server_error("Failed to send email"));
