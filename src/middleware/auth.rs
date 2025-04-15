@@ -1,4 +1,4 @@
-use crate::BuiltIn::jwt;
+use crate::BuiltIns::jwt;
 use futures::future::{ready, Ready};
 use crate::schema::Account::AccountRole;
 use actix_web::{dev::Payload, Error, FromRequest, HttpRequest};

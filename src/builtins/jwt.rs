@@ -2,9 +2,10 @@
 
 use std::env;
 use chrono::Utc;
-use crate::{schema::Account::AccountRole, BuiltIns};
+use crate::BuiltIns;
 use rusqlite::{ Error, params };
 use serde::{ Serialize, Deserialize };
+use crate::Schema::Account::AccountRole;
 use jsonwebtoken::{ encode, decode, Header, Validation, EncodingKey, DecodingKey };
 
 const PROJECT_NAME: &str = "Fanari";
