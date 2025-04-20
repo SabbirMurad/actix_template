@@ -39,12 +39,12 @@ impl std::fmt::Display for AllowedImageType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
-    uuid: String,
-    url: String,
-    metadata: String,
-    height: usize,
-    width: usize,
-    r#type: AllowedImageType
+    pub uuid: String,
+    pub url: String,
+    pub metadata: String,
+    pub height: usize,
+    pub width: usize,
+    pub r#type: AllowedImageType
 }
 
 
