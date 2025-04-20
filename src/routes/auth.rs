@@ -5,6 +5,10 @@ pub fn router(cfg: &mut web::ServiceConfig) {
     cfg.service(
     web::scope("/api/auth")
         .route(
+            "/refresh",
+            web::post().to(Handler::Auth::Refresh::task)
+        )
+        .route(
             "/sign-up",
             web::post().to(Handler::Auth::SignUp::task)
         )

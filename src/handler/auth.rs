@@ -4,6 +4,9 @@ use actix_web::HttpResponse;
 use mongodb::{ClientSession, Database};
 use crate::utils::response::Response;
 
+pub mod refresh;
+pub use refresh as Refresh;
+
 pub mod sign_up;
 pub use sign_up as SignUp;
 
