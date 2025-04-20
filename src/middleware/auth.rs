@@ -1,5 +1,6 @@
 use crate::BuiltIns::jwt;
 use futures::future::{ready, Ready};
+use serde_json::json;
 use crate::schema::Account::AccountRole;
 use actix_web::{web, dev::Payload, Error, FromRequest, HttpRequest};
 
@@ -34,7 +35,7 @@ impl FromRequest for RequireAccess {
     
         if auth_header.is_none() {
             return ready(Err(actix_web::error::ErrorUnauthorized(
-                "Missing access token"
+                json!({"error": "Missing authorization header"})
             )));
         }
                 
@@ -50,7 +51,7 @@ impl FromRequest for RequireAccess {
         if let Err(err) = result {
             log::error!("{:?}", err);
             return ready(Err(actix_web::error::ErrorUnauthorized(
-                "Invalid access token"
+                json!({"error": "Invalid authorization token"})
             )));
         }
 
@@ -60,7 +61,6 @@ impl FromRequest for RequireAccess {
             AccessRequirement::AnyToken => true,
             AccessRequirement::Role(r) => &claims.role == r,
             AccessRequirement::AnyOf(roles) => roles.contains(&claims.role),
-            _ => false,
         };
 
         if pass {
@@ -70,7 +70,7 @@ impl FromRequest for RequireAccess {
             }))
         } else {
             ready(Err(actix_web::error::ErrorForbidden(
-                "Not authorized to perform this action"
+                json!({"error": "Not authorized to perform this action"})
             )))
         }
     }
