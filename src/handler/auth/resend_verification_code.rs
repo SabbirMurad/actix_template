@@ -1,7 +1,7 @@
 use rand::Rng;
 use chrono::Utc;
 use mongodb::bson::doc;
-use crate::schema::Account;
+use crate::Model::Account;
 use crate::Integrations::Smtp;
 use crate::BuiltIns::mongo::MongoDB;
 use serde::{ Serialize, Deserialize };

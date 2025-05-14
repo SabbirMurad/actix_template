@@ -1,6 +1,6 @@
 use chrono::Utc;
 use mongodb::bson::doc;
-use crate::{builtins::jwt, schema::Account};
+use crate::{builtins::jwt, Model::Account};
 use crate::BuiltIns::mongo::MongoDB;
 use serde::{ Serialize, Deserialize };
 use crate::utils::response::Response;

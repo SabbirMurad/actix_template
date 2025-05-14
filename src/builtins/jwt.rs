@@ -5,7 +5,7 @@ use chrono::Utc;
 use crate::BuiltIns;
 use rusqlite::{ Error, params };
 use serde::{ Serialize, Deserialize };
-use crate::Schema::Account::AccountRole;
+use crate::Model::Account::AccountRole;
 use jsonwebtoken::{ encode, decode, Header, Validation, EncodingKey, DecodingKey };
 
 const PROJECT_NAME: &str = "Fanari";

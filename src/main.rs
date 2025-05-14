@@ -11,8 +11,8 @@ use actix_web::{ web, dev, http, error, middleware as ActixMiddleware, App, dev:
 mod builtins;
 use builtins as BuiltIns;
 
-mod schema;
-use schema as Schema;
+mod model;
+use model as Model;
 
 mod middleware;
 use middleware as Middleware;

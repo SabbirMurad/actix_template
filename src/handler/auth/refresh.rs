@@ -2,7 +2,7 @@ use crate::utils::response::Response;
 use serde::{ Serialize, Deserialize };
 use actix_web::{web, Error, HttpResponse };
 use serde_json::json;
-use crate::{schema::Account::AccountRole, BuiltIns::jwt};
+use crate::{Model::Account::AccountRole, BuiltIns::jwt};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

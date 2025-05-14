@@ -5,7 +5,7 @@ use crate::Utils::response::Response;
 use serde::{ Serialize, Deserialize };
 use actix_web::{ web, Error, HttpResponse };
 use crate::Utils::validation::validate_password;
-use crate::schema::Account;
+use crate::Model::Account;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResetPasswordFormData {

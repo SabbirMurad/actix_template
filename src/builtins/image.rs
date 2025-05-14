@@ -18,7 +18,7 @@ use std::io::Cursor;
 use rusqlite::params;
 use serde::{ Serialize, Deserialize };
 use image::{ ImageFormat, ImageOutputFormat, load_from_memory_with_format as img_loader };
-use crate::schema::AllowedImageType;
+use crate::Model::AllowedImageType;
 
 /*
   Thumbnail Scale Down Factor
