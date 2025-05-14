@@ -16,7 +16,7 @@ use crate::utils::validation::{validate_email, validate_full_name, validate_pass
 const CODE_EXPIRE_TIME: i64 = 15;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RegistrationFormData {
+pub struct RequestBody {
     full_name: String,
     username: String,
     email_address: String,
@@ -25,10 +25,10 @@ pub struct RegistrationFormData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct PostData { user_id: String }
+struct ResponseBody { user_id: String }
 
 
-pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResponse, Error> {
+pub async fn task(form_data: web::Json<RequestBody>) -> Result<HttpResponse, Error> {
     let post_data = sanitize(&form_data);
 
     if let Err(res) = check_empty_fields(&post_data) {
@@ -164,7 +164,7 @@ pub async fn task(form_data: web::Json<RegistrationFormData>) -> Result<HttpResp
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let data = PostData { user_id };
+    let data = ResponseBody { user_id };
     Ok(HttpResponse::Ok().content_type("application/json").json(data))
 }
 
@@ -301,7 +301,7 @@ async fn delete_account(
     Ok(())
 }
 
-fn sanitize(form_data: &RegistrationFormData) -> RegistrationFormData {
+fn sanitize(form_data: &RequestBody) -> RequestBody {
     let mut form = form_data.clone();
     form.password = form.password.trim().to_string();
     form.email_address = form.email_address.trim().to_string().to_lowercase();
@@ -312,7 +312,7 @@ fn sanitize(form_data: &RegistrationFormData) -> RegistrationFormData {
     form
 }
 
-fn check_empty_fields(form_data: &RegistrationFormData) -> Result<(), String> {
+fn check_empty_fields(form_data: &RequestBody) -> Result<(), String> {
     if form_data.full_name.len() == 0 {
         Err("Full Name is required".to_string())
     }

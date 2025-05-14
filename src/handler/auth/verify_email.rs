@@ -7,7 +7,7 @@ use crate::utils::response::Response;
 use actix_web::{ web, Error, HttpResponse };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PostData {
+pub struct RequestBody {
     user_id: String,
     validation_code: String,
 }
@@ -25,14 +25,14 @@ pub struct AccountInfoStruct {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Payload {
+struct ResponseBody {
     access_token: String,
     refresh_token: String,
     user_id: String,
     role: Account::AccountRole
 }
 
-pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error> {
+pub async fn task(form_data: web::Json<RequestBody>) -> Result<HttpResponse, Error> {
     let post_data = sanitize(&form_data);
 
     if let Err(res) = check_empty_fields(&post_data) {
@@ -154,16 +154,16 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let payload = Payload {
+    let ResponseBody = ResponseBody {
         access_token,
         refresh_token,
         user_id: account_core.uuid,
         role: account_core.role
     };
-    Ok(HttpResponse::Ok().content_type("application/json").json(payload))
+    Ok(HttpResponse::Ok().content_type("application/json").json(ResponseBody))
 }
 
-fn sanitize(form_data: &PostData) -> PostData {
+fn sanitize(form_data: &RequestBody) -> RequestBody {
   let mut form = form_data.clone();
   form.user_id = form.user_id.trim().to_string();
   form.validation_code = form.validation_code.trim().to_string();
@@ -171,7 +171,7 @@ fn sanitize(form_data: &PostData) -> PostData {
   form
 }
 
-fn check_empty_fields(form_data: &PostData) -> Result<(), String> {
+fn check_empty_fields(form_data: &RequestBody) -> Result<(), String> {
   if form_data.user_id.len() == 0 {
     Err("User id required".to_string())
   }

@@ -13,12 +13,12 @@ use actix_web::{ web, Error, HttpResponse };
 const REQ_EXP_TIME: i64 = 15;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PostData { user_id: String }
+pub struct RequestBody { user_id: String }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Payload { user_id: String, expires_in: i64 }
+struct ResponseBody { user_id: String, expires_in: i64 }
 
-pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error> {
+pub async fn task(form_data: web::Json<RequestBody>) -> Result<HttpResponse, Error> {
     /* DATABASE ACID SESSION INIT */
     let (db, mut session) = MongoDB.connect_acid().await;
     if let Err(error) = session.start_transaction().await {
@@ -108,7 +108,7 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
             return Ok(Response::internal_server_error(&error.to_string()));
         }
 
-        let data = Payload {
+        let data = ResponseBody {
             user_id: account_core.uuid.clone(),
             expires_in: REQ_EXP_TIME
         };
@@ -157,7 +157,7 @@ pub async fn task(form_data: web::Json<PostData>) -> Result<HttpResponse, Error>
         return Ok(Response::internal_server_error(&error.to_string()));
     }
 
-    let data = Payload {
+    let data = ResponseBody {
         user_id: account_core.uuid.clone(),
         expires_in: REQ_EXP_TIME
     };

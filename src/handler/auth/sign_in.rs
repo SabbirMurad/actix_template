@@ -15,26 +15,26 @@ use actix_web::{ web, Error, HttpResponse};
 const CODE_EXPIRE_TIME: i64 = 15;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PostData {
+pub struct RequestBody {
     email_or_username: String,
     password: String
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Payload {
+struct ResponseBody {
     two_afa_enabled: bool,
-    auth_payload: Option<AuthPayload>
+    auth_payload: Option<AuthResponseBody>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct AuthPayload {
+struct AuthResponseBody {
     access_token: String,
     refresh_token: String,
     user_id: String,
     role: Account::AccountRole,
 }
 
-pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Result<HttpResponse, Error> {
+pub async fn task(form_data: web::Json<RequestBody>, actix_session: Session) -> Result<HttpResponse, Error> {
     let email_or_username = form_data.email_or_username.trim().to_string().to_lowercase();
     if email_or_username.len() == 0 {
         return Ok(Response::bad_request("Email/Username is required"));
@@ -131,19 +131,19 @@ pub async fn task(form_data: web::Json<PostData>, actix_session: Session) -> Res
     actix_session.insert("user_id", &account_core.uuid).unwrap();
     actix_session.insert("role", account_core.role.to_string()).unwrap();
 
-    let data = AuthPayload {
+    let data = AuthResponseBody {
         access_token,
         refresh_token,
         user_id: account_core.uuid.clone(),
         role: account_core.role.clone(),
     };
 
-    let payload = Payload {
+    let response = ResponseBody {
         two_afa_enabled: false,
         auth_payload: Some(data)
     };
   
-    Ok(HttpResponse::Ok().content_type("application/json").json(payload))
+    Ok(HttpResponse::Ok().content_type("application/json").json(response))
 }
 
 // helper functions
