@@ -1,0 +1,163 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:host {
+    top:0;
+    left: 0;
+    all: initial;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    z-index: 100000;
+    position: fixed;
+    pointer-events: none;
+    font-family: var(--notification-font, sans-serif);
+
+    --wrapper-shadow-min: drop-shadow(0px 6px 12px rgba(0, 0, 0, 0.25));
+    --wrapper-shadow-max: drop-shadow(0px 8px 16px rgba(0, 0, 0, 0.25));
+}
+.data-wrapper {
+    width: 288px;
+    height: 140px;
+    display: none;
+    position: absolute;
+    pointer-events:all;
+    flex-direction: column;
+}
+
+/* change the values here to change the position on toast */
+.top-right { top: 68px; right: 30px; }
+
+.top-left { top: 84px; left: 24px; }
+
+.top-center { top: 30px; right: 50%; transform: translateX(50%); }
+
+.bottom-right { bottom: 30px; right: 30px; }
+
+.bottom-left { bottom: 30px; left: 30px; }
+
+.bottom-center{ bottom: 30px; right: 50%; transform: translateX(50%); }
+
+@media screen and (max-width:400px) {
+    .top-right { top: 30px; right: 50%; transform: translateX(50%); }
+
+    .top-left { top: 30px; left: 50%; transform: translateX(-50%); }
+
+    .bottom-right { bottom: 30px; right: 50%; transform: translateX(50%); }
+
+    .bottom-left { bottom: 30px; left: 50%; transform: translateX(-50%); }
+}
+
+.notification-container {
+    width: 100%;
+    display: flex;
+    position: relative; 
+    flex-direction: column;
+}
+
+.notification-item{
+    width: 100%;
+    display: flex;
+    cursor: pointer;
+    min-height: 80px;
+    position: absolute;
+    padding: 20px 12px;
+    border-radius: 10px;
+    align-items: center;
+    transition: all .5s ease;
+    justify-content: space-between;
+    box-shadow: var(--wrapper-shadow-min);
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.12);
+    background-color: var(--notification-background, #ffffff);
+}
+
+.notification-item.bottom {
+    box-shadow: 0px -10px 15px rgba(0, 0, 0, 0.12);
+}
+
+.notify-1 {
+    top:0;
+    left: 0;
+    z-index: 3;
+    transform: translateX(0%);
+}
+
+.notify-2 {
+    top: 20px;
+    left: 50%;
+    z-index: 2;
+    width: calc(100% - 40px);
+    transform: translateX(-50%);
+}
+
+.notify-3 {
+    top: 40px;
+    left: 50%;
+    z-index: 1;
+    width: calc(100% - 68px);
+    transform: translateX(-50%);
+}
+
+.notify-1.bottom { top: unset; bottom: 0; }
+
+.notify-2.bottom { top: unset; bottom: 20px; }
+
+.notify-3.bottom { top: unset; bottom: 40px; }
+
+.notification-remove { left: -60%; opacity: 0; }
+
+.notification-icon{
+    width: 32px;
+    height: 32px;
+    display: flex;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--notification-default, #afafaf);
+}
+
+.notification-text {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    width: calc(100% - 80px);
+    color: var(--notification-message, #3D3D3D);
+
+    @supports (-webkit-line-clamp: 2) {
+        overflow: hidden;
+        white-space: initial;
+        display: -webkit-box;
+        text-overflow: ellipsis;
+
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+}
+.notify-2 .notification-text { font-size: 10px; }
+
+.notify-3 .notification-text { font-size: 10px; }
+
+.cross-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-count {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    font-size: 32px;
+    cursor: default;
+    font-weight: 700;
+    transform: translateX(-50%);
+    text-shadow: 0px 10px 15px rgba(0, 0, 0, 0.12);
+    color: var(--notification-background, #ffffff);
+}
+
+.notification-count.bottom { top: -162px; }

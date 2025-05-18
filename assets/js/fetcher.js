@@ -10,12 +10,14 @@ class Fetcher {
         endpoint,
         headers = {},
         body,
+        showError = true,
     }) {
         return await this.#commonMethods({
             endpoint: endpoint,
             method: "POST",
             headers: headers,
             body: body,
+            showError: showError
         })
     }
 
@@ -30,12 +32,14 @@ class Fetcher {
         endpoint,
         headers = {},
         body,
+        showError = true,
     }) {
         return await this.#commonMethods({
             endpoint: endpoint,
             method: "PUT",
             headers: headers,
             body: body,
+            showError: showError
         })
     }
 
@@ -50,12 +54,14 @@ class Fetcher {
         endpoint,
         headers = {},
         body,
+        showError = true,
     }) {
         return await this.#commonMethods({
             endpoint: endpoint,
             method: "PATCH",
             headers: headers,
             body: body,
+            showError: showError
         })
     }
 
@@ -70,6 +76,7 @@ class Fetcher {
         endpoint,
         headers = {},
         query = {},
+        showError = true,
     }) {
         let queryStr = '';
 
@@ -93,6 +100,7 @@ class Fetcher {
             method: "DELETE",
             headers: headers,
             query: queryStr,
+            showError: showError
         })
     }
 
@@ -107,6 +115,7 @@ class Fetcher {
         endpoint,
         headers = {},
         query = {},
+        showError = true,
     }) {
         let queryStr = '';
 
@@ -130,6 +139,7 @@ class Fetcher {
             method: "GET",
             headers: headers,
             query: queryStr,
+            showError: showError
         })
     }
 
@@ -148,6 +158,7 @@ class Fetcher {
         headers = {},
         body,
         query = '',
+        showError = true
     }) {
         let _headers = {
             "Accept": "application/json",
@@ -173,6 +184,13 @@ class Fetcher {
         try {
             response = await fetch(url, reqObject);
         } catch (error) {
+            if (showError) {
+                toast.setNotification({
+                    type: 'error',
+                    message: error.tostring(),
+                })
+            }
+
             return new FetchResult({
                 ok: false,
                 status: -1,
@@ -197,6 +215,13 @@ class Fetcher {
                 }
             }
 
+            if (showError) {
+                toast.setNotification({
+                    type: 'error',
+                    message: error,
+                })
+            }
+
             return new FetchResult({
                 ok: false,
                 status: response.status,
@@ -208,13 +233,22 @@ class Fetcher {
         let result;
         try {
             result = await response.json();
-        } catch (error) {
-            console.error(error);
-            return {
+        } catch (e) {
+            console.error(e);
+
+            if (showError) {
+                toast.setNotification({
+                    type: 'error',
+                    message: 'Error Parsing Response',
+                })
+            }
+
+            return new FetchResult({
                 ok: false,
-                status_code: response.status,
-                message: "Error Parsing Response"
-            };
+                status: response.status,
+                data: null,
+                error: error,
+            })
         }
 
         return new FetchResult({
