@@ -43,13 +43,14 @@ function prettyDate(timestamp) {
  * Converts an ArrayBuffer to a base64 encoded string.
  *
  * @param {ArrayBuffer} buffer The ArrayBuffer to convert.
+ * @param {string} type The type to convert to.
  * @return {string} The base64 encoded string.
  */
-function arrayBufferToBase64(buffer) {
+function arrayBufferToBase64(buffer, type) {
     const bytes = new Uint8Array(buffer);
     const binaryString = String.fromCharCode(...bytes);
     const base64 = btoa(binaryString);
-    return `data:image/png;base64,${base64}`;
+    return `data:${type};base64,${base64}`;
 }
 
 /**
