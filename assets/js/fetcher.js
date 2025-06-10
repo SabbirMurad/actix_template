@@ -203,7 +203,7 @@ class Fetcher {
             let error;
             try {
                 const result = await response.json();
-                error = result.error || "Response Not Okay";
+                error = result.message || "Response Not Okay";
             } catch (e) {
                 console.error(e);
                 if (response.status === 400) {
